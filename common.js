@@ -195,69 +195,132 @@
     
     } // setupScrollableTable
     
-    ////
-    // 歌唱楽曲リスト変換ツール (入力補助ツールページ)
-    ////
-    
-    function setupSongListConverter() {
-    
-        const title = document.title;
-        //歌唱楽曲リスト
-        if (title.includes("編集用_入力補助ツール")) {
-            window.setInterval(convertSongList, 1000);
+  //----------
+// 歌唱楽曲リスト変換ツール (入力補助ツールページ)
+//----------
+
+setupSongListConverter () {
+
+    const title = document.title
+    const boxes = {}
+
+    initSongListConverter.call(this)
+
+    function initSongListConverter () {
+        const userArea = document.querySelector('div.user-area')
+        // 見出しを基準にする。見つからなければ適用なし
+        const headings = userArea.querySelectorAll('div.title-1')
+        const converterHeading = Array.prototype.find.call(headings, (heading) => {
+            const text = heading.textContent
+            // ホロライブ、どっとライブ、もちぷろ、のりプロ、しぐれうい、ホロスターズ
+            return text.match('歌リスト変換書き換え簡略版')
+        })
+        if (!converterHeading) {
+            return
         }
-    
-        //歌唱楽曲リスト変換
-        //textArea[0-7]を使用
-        //入力0-5→出力6,7
-        function convertSongList() {
-            let textArea = document.getElementsByClassName("PLAIN-BOX");
-            let name = textArea[0].value.replace(/\n/g, "");
-            let roman = textArea[1].value.replace(/\n/g, "");
-            let date = textArea[2].value.replace(/\n/g, "");
-            let castTitle = textArea[3].value.replace(/\n/g, "");
-            let URL = textArea[4].value.replace(/\n/g, "");
-            let songs = textArea[5].value.split("\n");
-    
-    
-            let castList = "|" + name + "|[[" + date + ">#data_" + roman + date.replace(/\//g, "") + "]]&aname(" + roman + date.replace(/\//g, "") + ")|"
-            + "[[" + castTitle + ">>" + URL + "]]|";
-    
-    
-            //カウントする処理
-            let songList = "|" + name + "|[[" + date.replace(/\//g, ".") + "生" + ">#" + roman + date.replace(/\//g, "") + "]]" + "-001"
-            + "&aname(data_" + roman + date.replace(/\//g, "") + ")|"
-            + "[[" + songs[0] + ">>" + URL + "&t=]]||";
-    
-            let num = 1;
-            for (let i = 1; i < songs.length; i++) {
-                if (songs[i].length > 0) {
-                    songList = songList + "\n" + "|" + name + "|[[" + date.replace(/\//g, ".") + "生"
-                        + ">#" + roman + date.replace(/\//g, "") + "]]" + "-" + String(i+1).padStart(3,"0") + "|"
-                        + "[[" + songs[i] + ">>" + URL + "&t=]]||";
-                    num = num + 1;
-                }
-            }
-            //のりプロ
-            if (wiki_id === "noriopro") {
-                castList = castList + num + "|";
-            } else {
-                //どっとライブ
-                //ホロライブ
-                //もちぷろ
-                //ルカ
-                castList = castList + num + "||";
-            }
-    
-            textArea[6].value = castList;
-            textArea[7].value = songList;
-    
-            textArea[6].readOnly = true;
-            textArea[7].readOnly = true;
+
+        // 基準の見出し以降からテキストボックスを8つ見つける。見つからなければ適用なし
+        const textareas = userArea.querySelectorAll('textarea.PLAIN-BOX')
+        const firstBoxIndex = Array.prototype.findIndex.call(textareas, (textarea) => {
+            return (WikiExtension.compareNodeOrder(textarea, converterHeading) > 0)
+        })
+        if (firstBoxIndex < 0 || firstBoxIndex + 7 >= textareas.length) {
+            return
         }
-    
-    } // setupSongListConverter
-    
+
+        boxes.name = textareas[firstBoxIndex]
+        boxes.roman = textareas[firstBoxIndex + 1]
+        boxes.date = textareas[firstBoxIndex + 2]
+        boxes.cast = textareas[firstBoxIndex + 3]
+        boxes.url = textareas[firstBoxIndex + 4]
+        boxes.songs = textareas[firstBoxIndex + 5]
+        boxes.castOut = textareas[firstBoxIndex + 6]
+        boxes.songsOut = textareas[firstBoxIndex + 7]
+
+        if (title.includes('編集用_入力補助ツール')) {
+            window.setInterval(convertSongList.bind(this), 1000)
+        }
+    }
+
+    // タイムスタンプの形式チェック
+    function extractHMSformat(timeStr) {
+      const regex = /(\d{1,2}:\d{1,2}(?::\d{1,2})?)/;
+      const match = timeStr.match(regex);
+      if (match) {
+        return match[1];
+      }
+      return null;
+    }
+
+    // タイムスタンプの形式チェック
+    function correntHMSformat(hmsStr) {
+      if (!hmsStr) {
+        return null;
+      }
+      let seconds = ((hmsStr) => {
+        const parts = hmsStr.split(':').map(Number).reverse();
+        const multipliers = [1, 60, 3600];  // seconds, minutes, hours
+        return parts.reduce((acc, part, index) => acc + part * multipliers[index], 0);
+      })(hmsStr);
+      const hours = Math.floor(seconds / 3600);
+      seconds -= hours * 3600;
+      const minutes = Math.floor(seconds / 60);
+      seconds -= minutes * 60;
+      return `${hours.toString().padStart(2, '0')}h${minutes.toString().padStart(2, '0')}m${seconds.toString().padStart(2, '0')}s`.replace(/00[hms]/g, '');
+    }
+
+    // 歌唱楽曲リスト変換処理
+    function convertSongList () {
+        const name = boxes.name.value.replace(/\n/g, '')
+        const roman = boxes.roman.value.replace(/\n/g, '')
+        const dateSlash = boxes.date.value.replace(/\n/g, '')
+        const castTitle = boxes.cast.value.replace(/\n/g, '')
+        const url = boxes.url.value.replace(/\n/g, '')
+        const songs = boxes.songs.value.split('\n')
+        const datePlain = dateSlash.replace(/\//g, '')
+        const dateDot = dateSlash.replace(/\//g, '.')
+        const castAnchor = roman + datePlain
+        const dataAnchor = `data_${roman}${datePlain}`
+        const escapedCastTitle = WikiExtension.escapeWikiComponents(castTitle)
+
+        const songRows = []
+
+        for (const line of songs) {
+          if (!line) continue
+          const hmsStr = extractHMSformat(line);
+          const timestamp = correntHMSformat(hmsStr);
+
+          const songName = !hmsStr ? line : line.split(hmsStr).pop().replace(/^[ 　]+|[ 　]+$/g, '');
+          const escapedSongName = WikiExtension.escapeWikiComponents(songName)
+          const songUrl = timestamp ? `[[${escapedSongName}>>${url}&t=${timestamp}]]` : `[[${escapedSongName}>>${url}]]`;
+          const index = ('00' + (songRows.length + 1)).slice(-3)
+          const songRow = [
+            name,
+            `[[${dateDot}生>#${castAnchor}]]-${index}`,
+            songUrl,
+            ''
+          ]
+          if (songRows.length === 0) {
+            songRow[1] += `&aname(${dataAnchor})`
+          }
+          songRows.push('|' + songRow.join('|') + '|')
+        }
+
+        const castRow = [
+            name,
+            `[[${dateSlash}>#${dataAnchor}]]&aname(${castAnchor})`,
+            `[[${escapedCastTitle}>>${url}]]`,
+            String(songRows.length)
+        ]
+
+        boxes.castOut.value = '|' + '|' + '|'
+        boxes.songsOut.value = songRows.join('\n')
+
+        boxes.castOut.readOnly = true
+        boxes.songsOut.readOnly = true
+    }
+
+} // setupSongListConverter
     ////
     // 正規表現置換ツール (入力補助ツールページ)
     ////
