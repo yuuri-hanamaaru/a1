@@ -639,7 +639,7 @@
                     applyFilter(3, name) // 歌ってみた
                 }
                 // ルカ
-                if (this.wikiId === 'renshu_suruka' && !(name.startsWith('ルカ') || name.startsWith('仲間'))) {
+                if (this.wikiId === 'renshu_suruka' && !(name.startsWith('共通')) {
                     applyFilter(2, name) // オリジナルソング
                     applyFilter(3, name) // 歌ってみた
                     applyFilter(4, name) // イベント
