@@ -6,6 +6,10 @@
     if (is_disabled) return
     
     //---------250331-526-641-1834編集
+    //---------250422-上記をWP-雨海に対応
+    //---------250423-641-1834-WP-天晴に対応
+    
+    //---------
     // Wiki拡張本体
     //----------
     
@@ -639,7 +643,7 @@
                     applyFilter(3, name) // 歌ってみた
                 }
                 // ウェザプラ
-                if (this.wikiId === 'weather_planet' && !(name.startsWith('ウェザプラ') || name.startsWith('共通'))) {
+                if (this.wikiId === 'weather_planet' && !(name.startsWith('ウェザプラ') || name.startsWith('共通')|| name.startsWith('WeatherPlanet'))) {
                     applyFilter(2, name) // オリジナルソング
                     applyFilter(3, name) // 歌ってみた
                     applyFilter(4, name) // イベント
@@ -1829,7 +1833,8 @@
             }
         } else if (this.wikiId === 'weather_planet') {
             this.membersData = {
-                ruka:         {yt: 'UClS3cnIUM9yzsBPQzeyX_8Q', tw: '', name: 'ルカ', tag: '', handle:'@RukaCh.雨海ルカ'}
+                ruka:         {yt: 'UClS3cnIUM9yzsBPQzeyX_8Q', tw: '', name: '雨海ルカ', tag: '', handle:'@RukaCh.雨海ルカ'},
+                hinata:         {yt: 'UCBEdGV537X2NTkiwz54DTnA', tw: '', name: '天晴ひなた', tag: '', handle:'@HinataCh.天晴ひなた'}
             }
         } else {
             this.membersData = null
